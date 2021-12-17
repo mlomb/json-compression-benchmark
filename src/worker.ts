@@ -70,4 +70,5 @@ self.onmessage = async (e: MessageEvent<File>) => {
     self.close();
 };
 
-export default null;
+const nil = null;
+export default nil;
