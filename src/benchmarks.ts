@@ -9,6 +9,8 @@ import * as fflate from "fflate";
 import { LZMA } from "lzma/src/lzma_worker-min";
 // @ts-ignore
 import cbor from "cbor-js";
+// @ts-ignore
+import { BaseEx } from "base-ex";
 
 // POCO object => POCO object
 interface PackStep {
@@ -43,12 +45,12 @@ const packOptions: PackStep[] = [
         fn: async (data: any) => data,
     },
     {
-        name: "jsonpack",
-        fn: async (input: any) => jsonpack_pack(input),
-    },
-    {
         name: "compress-json",
         fn: async (input: any) => compress_json(input),
+    },
+    {
+        name: "jsonpack",
+        fn: async (input: any) => jsonpack_pack(input),
     },
 ];
 
@@ -89,22 +91,36 @@ const compressionOptions: CompressionStep[] = [
     {
         name: "gzip",
         binary: true,
-        fn: async (input: Uint8Array) => fflate.gzipSync(input),
+        fn: async (input: Uint8Array) => fflate.gzipSync(input, { level: 9 }),
     },
-    {
+    /*{
         name: "lzma",
         binary: true,
         fn: async (input: Uint8Array) => new Uint8Array(LZMA.compress(input)),
-    },
+    },*/
 ];
 
+const baseEx = new BaseEx("bytes", "bytes");
+
 const encodingOptions: EncodingStep[] = [
+    { name: "No encoding", acceptBinary: false, fn: async (input: Uint8Array) => new TextDecoder().decode(input) },
+    { name: "base16", acceptBinary: true, fn: async (input: Uint8Array) => baseEx.base16.encode(input) },
     {
-        name: "No encoding",
-        acceptBinary: false,
-        fn: async (input: Uint8Array) => new TextDecoder().decode(input),
+        name: "base32_rfc3548",
+        acceptBinary: true,
+        fn: async (input: Uint8Array) => baseEx.base32_rfc3548.encode(input),
     },
+    { name: "base64", acceptBinary: true, fn: async (input: Uint8Array) => baseEx.base64.encode(input) },
     {
+        name: "base64_urlsafe",
+        acceptBinary: true,
+        fn: async (input: Uint8Array) => baseEx.base64_urlsafe.encode(input),
+    },
+    { name: "base85adobe", acceptBinary: true, fn: async (input: Uint8Array) => baseEx.base85adobe.encode(input) },
+    { name: "base85ascii", acceptBinary: true, fn: async (input: Uint8Array) => baseEx.base85ascii.encode(input) },
+    { name: "base85_z85", acceptBinary: true, fn: async (input: Uint8Array) => baseEx.base85_z85.encode(input) },
+    { name: "base91", acceptBinary: true, fn: async (input: Uint8Array) => baseEx.base91.encode(input) },
+    /*{
         name: "base64",
         acceptBinary: true,
         fn: async (input: Uint8Array) => {
@@ -115,6 +131,11 @@ const encodingOptions: EncodingStep[] = [
             });
             return (base64url as string).split(",", 2)[1] || "";
         },
+    },*/
+    {
+        name: "base128",
+        acceptBinary: true,
+        fn: async (input: Uint8Array) => require("base128-encoding").encode(input),
     },
     {
         name: "base2048",
